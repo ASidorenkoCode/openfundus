@@ -1,6 +1,6 @@
 export { createPreemptiveCompactionHook, clearPreemptiveCompaction } from "./preemptive-compaction"
 export { createCompactionTodoPreserverHook, clearTodoSnapshots } from "./compaction-todo-preserver"
-export { handleEditErrorRecovery } from "./edit-error-recovery"
+export { handleEditErrorRecovery, checkEditErrorsInMessages, clearEditErrorTracking } from "./edit-error-recovery"
 export { handleToolOutputTruncation } from "./tool-output-truncator"
 export { handleNonInteractiveEnv } from "./non-interactive-env"
 export {

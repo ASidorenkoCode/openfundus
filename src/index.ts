@@ -16,6 +16,8 @@ import {
   createCompactionTodoPreserverHook,
   clearTodoSnapshots,
   handleEditErrorRecovery,
+  checkEditErrorsInMessages,
+  clearEditErrorTracking,
   handleToolOutputTruncation,
   handleNonInteractiveEnv,
   handleContextWindowMonitor,
@@ -34,6 +36,8 @@ const sessionContext = new Map<string, SessionInfo>()
 
 // Cache recalled memories per session to avoid repeated lookups
 const recalledMemories = new Map<string, string>()
+// Buffer for edit error reminders (filled by messages transform, consumed by system transform)
+const editErrorSystemPrompt: { system: string[] } = { system: [] }
 // Track which sessions have had their first message processed
 const sessionFirstMessage = new Set<string>()
 
@@ -176,6 +180,7 @@ export default async function OpenRecallPlugin(
           clearPreemptiveCompaction(properties.id)
           clearTodoSnapshots(properties.id)
           clearContextWindowMonitor(properties.id)
+          clearEditErrorTracking()
         }
       }
 
@@ -358,14 +363,32 @@ export default async function OpenRecallPlugin(
         }
       }
 
+      // Edit error recovery: inject buffered reminders from messages transform
+      if (editErrorSystemPrompt.system.length > 0) {
+        output.system.push(...editErrorSystemPrompt.system)
+        editErrorSystemPrompt.system = []
+      }
+
       // SCR: inject system prompt
       if (scrHooks["experimental.chat.system.transform"]) {
         await scrHooks["experimental.chat.system.transform"](input, output)
       }
     },
 
-    // SCR: message reduction pipeline (SCR only)
-    "experimental.chat.messages.transform": scrHooks["experimental.chat.messages.transform"] as any,
+    // SCR message reduction pipeline + edit error recovery scan
+    "experimental.chat.messages.transform": async (input: any, output: any) => {
+      // Scan messages for edit/apply_patch errors and store reminder for system prompt
+      try {
+        checkEditErrorsInMessages(output.messages, editErrorSystemPrompt)
+      } catch {
+        // Silent fail
+      }
+
+      // SCR: run message reduction pipeline
+      if (scrHooks["experimental.chat.messages.transform"]) {
+        await (scrHooks["experimental.chat.messages.transform"] as any)(input, output)
+      }
+    },
 
     // Auto-distill the LLM's final response text into memory (OpenRecall only)
     "experimental.text.complete": async (input, output) => {
