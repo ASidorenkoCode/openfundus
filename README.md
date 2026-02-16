@@ -125,29 +125,46 @@ Use `/scr` in the OpenCode TUI:
 
 ### SCR Configuration
 
-SCR reads its config from `~/.config/opencode/scr.jsonc` (or `scr.json`). Example:
+SCR supports multiple config locations (in priority order):
+
+1. **Project**: `<project>/.opencode/scr.jsonc` (or `scr.json`)
+2. **Custom**: `$OPENCODE_CONFIG_DIR/scr.jsonc` (or `scr.json`)
+3. **Global**: `~/.config/opencode/scr.jsonc` (or `scr.json`)
+
+Example config with all defaults shown:
 
 ```jsonc
 {
   "enabled": true,
   "debug": false,
+  "pruneNotification": "detailed",   // "off" | "minimal" | "detailed"
+  "pruneNotificationType": "chat",    // "chat" | "toast"
+  "manualMode": {
+    "enabled": false,
+    "automaticStrategies": true       // run strategies even in manual mode
+  },
+  "turnProtection": {
+    "enabled": false,
+    "turns": 4                        // protect tool results from the last N turns
+  },
+  "protectedFilePatterns": [],        // glob patterns for files that should never be pruned
   "strategies": {
-    "deduplication": { "enabled": true },
+    "deduplication": { "enabled": true, "protectedTools": [] },
     "supersedeWrites": { "enabled": true },
-    "purgeErrors": { "enabled": true, "turns": 3 }
+    "purgeErrors": { "enabled": true, "turns": 4, "protectedTools": [] }
   },
   "tools": {
     "prune": { "permission": "allow" },
-    "distill": { "permission": "allow", "showDistillation": true },
-    "compress": { "permission": "allow", "showCompression": true },
+    "distill": { "permission": "allow", "showDistillation": false },
+    "compress": { "permission": "deny", "showCompression": false },
     "settings": {
       "nudgeEnabled": true,
-      "nudgeFrequency": 4,
+      "nudgeFrequency": 10,
       "protectedTools": ["memory_store", "memory_search"],
-      "contextLimit": "80%"
+      "contextLimit": 100000
     }
   },
-  "commands": { "enabled": true }
+  "commands": { "enabled": true, "protectedTools": [] }
 }
 ```
 
@@ -155,16 +172,26 @@ SCR reads its config from `~/.config/opencode/scr.jsonc` (or `scr.json`). Exampl
 |-----|-------------|
 | `enabled` | Enable/disable SCR entirely |
 | `debug` | Write debug logs to `~/.config/opencode/logs/scr/` |
+| `pruneNotification` | Notification verbosity: `"off"`, `"minimal"`, or `"detailed"` |
+| `pruneNotificationType` | Where notifications appear: `"chat"` or `"toast"` |
+| `manualMode.enabled` | Disable automatic nudges (tools still available manually) |
+| `manualMode.automaticStrategies` | Run automatic strategies even when manual mode is on |
+| `turnProtection.enabled` | Protect recent tool results from being pruned |
+| `turnProtection.turns` | Number of recent turns to protect |
+| `protectedFilePatterns` | Glob patterns for files that should never be pruned |
 | `tools.*.permission` | `"allow"` (auto), `"ask"` (confirm), or `"deny"` (disabled) |
 | `tools.settings.nudgeEnabled` | Periodically remind the model to prune |
-| `tools.settings.nudgeFrequency` | Nudge every N tool calls |
+| `tools.settings.nudgeFrequency` | Nudge every N tool calls (default: 10) |
 | `tools.settings.contextLimit` | Token threshold for compress nudge (absolute number or `"80%"`) |
 | `tools.settings.protectedTools` | Tools that should never be pruned |
 | `tools.settings.modelLimits` | Per-model context limits, e.g. `{ "anthropic/claude-sonnet-4-5-20250929": "75%" }` |
 | `strategies.deduplication.enabled` | Auto-remove duplicate tool calls |
+| `strategies.deduplication.protectedTools` | Tools exempt from deduplication |
 | `strategies.supersedeWrites.enabled` | Keep only latest write to each file |
 | `strategies.purgeErrors.enabled` | Auto-remove old error outputs |
 | `strategies.purgeErrors.turns` | How many turns back to purge errors |
+| `strategies.purgeErrors.protectedTools` | Tools exempt from error purging |
+| `commands.protectedTools` | Tools that can't be pruned via CLI commands |
 
 ## Session Protection Hooks
 
