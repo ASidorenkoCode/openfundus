@@ -9,6 +9,10 @@
  * Inspired by oh-my-opencode's tool-output-truncator hook.
  */
 
+// Strip ANSI escape sequences to save tokens (issue #1796)
+// eslint-disable-next-line no-control-regex
+const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]|\x1b\].*?(?:\x07|\x1b\\)/g
+
 const CHARS_PER_TOKEN = 4
 
 // Token limits (converted to char limits internally)
@@ -41,8 +45,14 @@ export function handleToolOutputTruncation(
   tool: string,
   output: { output: string },
 ): void {
-  if (!TRUNCATABLE_TOOLS.has(tool)) return
   if (typeof output.output !== "string") return
+
+  // Always strip ANSI escape sequences from all tool outputs
+  if (ANSI_REGEX.test(output.output)) {
+    output.output = output.output.replace(ANSI_REGEX, "")
+  }
+
+  if (!TRUNCATABLE_TOOLS.has(tool)) return
 
   const maxChars = TOOL_SPECIFIC_LIMITS[tool] ?? DEFAULT_MAX_CHARS
   if (output.output.length <= maxChars) return

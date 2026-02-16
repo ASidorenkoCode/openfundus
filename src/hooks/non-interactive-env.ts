@@ -65,6 +65,9 @@ export function handleNonInteractiveEnv(
   // Only prepend env vars for git commands
   if (!/\bgit\b/.test(command)) return
 
+  // Idempotency: skip if env vars are already prepended (issue #1822)
+  if (command.includes("GIT_TERMINAL_PROMPT=")) return
+
   const envPrefix = buildEnvPrefix(NON_INTERACTIVE_ENV)
   output.args.command = `${envPrefix} ${command}`
 }

@@ -13,6 +13,7 @@ type RecoveryErrorType =
   | "tool_result_missing"
   | "thinking_block_order"
   | "thinking_disabled_violation"
+  | "unavailable_tool"
   | null
 
 interface MessageData {
@@ -88,6 +89,14 @@ function detectErrorType(error: unknown): RecoveryErrorType {
     return "tool_result_missing"
   }
 
+  if (
+    message.includes("unavailable_tool") ||
+    message.includes("dummy_tool") ||
+    (message.includes("tool") && message.includes("not available"))
+  ) {
+    return "unavailable_tool"
+  }
+
   return null
 }
 
@@ -129,11 +138,13 @@ export function createSessionRecoveryHook(client: RecoveryClient, directory: str
         tool_result_missing: "Tool Crash Recovery",
         thinking_block_order: "Thinking Block Recovery",
         thinking_disabled_violation: "Thinking Strip Recovery",
+        unavailable_tool: "Unavailable Tool Recovery",
       }
       const messages: Record<string, string> = {
         tool_result_missing: "Injecting cancelled tool results...",
         thinking_block_order: "Fixing message structure...",
         thinking_disabled_violation: "Stripping thinking blocks...",
+        unavailable_tool: "Recovering from unavailable tool error...",
       }
 
       await client.tui
@@ -163,6 +174,8 @@ export function createSessionRecoveryHook(client: RecoveryClient, directory: str
         await recoverThinkingBlockOrder(client, sessionID, allMsgs)
       } else if (errorType === "thinking_disabled_violation") {
         await recoverThinkingDisabled(client, sessionID, allMsgs)
+      } else if (errorType === "unavailable_tool") {
+        await recoverUnavailableTool(client, sessionID, failedMsg)
       }
     } catch (e) {
       console.error("[OpenRecall] Session recovery failed:", e)
@@ -248,6 +261,37 @@ async function recoverThinkingBlockOrder(
   }
 
   return false
+}
+
+/** Recover from unavailable/dummy tool errors by injecting error results */
+async function recoverUnavailableTool(
+  client: RecoveryClient,
+  sessionID: string,
+  failedMsg: MessageData,
+): Promise<boolean> {
+  const parts = failedMsg.parts ?? []
+  const toolUseIds = parts
+    .filter((p) => (p.type === "tool_use" || p.type === "tool") && (p.callID || p.id))
+    .map((p) => p.callID ?? p.id!)
+
+  if (toolUseIds.length === 0) return false
+
+  const toolResultParts = toolUseIds.map((id) => ({
+    type: "tool_result" as const,
+    tool_use_id: id,
+    content: "Tool unavailable — it was removed or is not registered in the current session. Use an alternative approach.",
+    is_error: true,
+  }))
+
+  try {
+    await client.session.promptAsync({
+      path: { id: sessionID },
+      body: { parts: toolResultParts },
+    })
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** Strip thinking blocks when thinking is disabled */

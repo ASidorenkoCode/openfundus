@@ -8,11 +8,8 @@
  */
 
 const ANTHROPIC_DISPLAY_LIMIT = 1_000_000
-const ANTHROPIC_ACTUAL_LIMIT =
-  process.env.ANTHROPIC_1M_CONTEXT === "true" ||
-  process.env.VERTEX_ANTHROPIC_1M_CONTEXT === "true"
-    ? 1_000_000
-    : 200_000
+// Default to 1M — modern Claude models (Opus 4.6, Sonnet 4.5) natively support 1M context
+const ANTHROPIC_ACTUAL_LIMIT = 1_000_000
 
 const CONTEXT_WARNING_THRESHOLD = 0.7
 

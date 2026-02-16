@@ -1,6 +1,6 @@
 {
   "name": "openfundus",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "All-in-one OpenCode plugin: cross-session memory, selective context reduction, and session protection hooks",
   "module": "src/index.ts",
   "main": "src/index.ts",

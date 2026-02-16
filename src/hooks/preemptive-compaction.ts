@@ -7,13 +7,9 @@
  * Inspired by oh-my-opencode's preemptive-compaction hook.
  */
 
-const DEFAULT_ACTUAL_LIMIT = 200_000
-
-const ANTHROPIC_ACTUAL_LIMIT =
-  process.env.ANTHROPIC_1M_CONTEXT === "true" ||
-  process.env.VERTEX_ANTHROPIC_1M_CONTEXT === "true"
-    ? 1_000_000
-    : DEFAULT_ACTUAL_LIMIT
+// Default to 1M — modern Claude models natively support 1M context
+const DEFAULT_ACTUAL_LIMIT = 1_000_000
+const ANTHROPIC_ACTUAL_LIMIT = 1_000_000
 
 const PREEMPTIVE_COMPACTION_THRESHOLD = 0.78
 
