@@ -12,12 +12,19 @@ const EDIT_ERROR_PATTERNS = [
   "oldstring and newstring must be different",
   "oldstring not found",
   "oldstring found multiple times",
+  // apply_patch errors
+  "apply_patch verification failed",
+  "patch rejected",
+  "hunk application failed",
+  "no such file or directory",
 ]
+
+const EDIT_TOOL_NAMES = new Set(["edit", "apply_patch"])
 
 const EDIT_ERROR_REMINDER = `
 [EDIT ERROR - IMMEDIATE ACTION REQUIRED]
 
-You made an Edit mistake. STOP and do this NOW:
+You made an edit mistake. STOP and do this NOW:
 
 1. READ the file immediately to see its ACTUAL current state
 2. VERIFY what the content really looks like (your assumption was wrong)
@@ -30,7 +37,7 @@ export function handleEditErrorRecovery(
   tool: string,
   output: { output: string },
 ): void {
-  if (tool.toLowerCase() !== "edit") return
+  if (!EDIT_TOOL_NAMES.has(tool.toLowerCase())) return
   if (typeof output.output !== "string") return
 
   const outputLower = output.output.toLowerCase()
