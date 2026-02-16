@@ -216,6 +216,14 @@ export default async function OpenRecallPlugin(
         // Silent fail
       }
 
+      // Coerce replaceAll from string to boolean (#1736 — LLMs sometimes output "false"/"true")
+      if (input.tool.toLowerCase() === "edit") {
+        const args = (output as any).args
+        if (args && typeof args.replaceAll === "string") {
+          args.replaceAll = args.replaceAll === "true"
+        }
+      }
+
       // Write guard: block Write on existing files, force Edit
       try {
         handleWriteExistingFileGuard(input.tool, (output as any).args ?? {}, inputRef.directory)

@@ -56,7 +56,12 @@ export function handleContextWindowMonitor(
   const usedTokens = totalInputTokens.toLocaleString()
   const limitTokens = ANTHROPIC_DISPLAY_LIMIT.toLocaleString()
 
-  output.output += `\n\n${CONTEXT_REMINDER}\n[Context Status: ${usedPct}% used (${usedTokens}/${limitTokens} tokens), ${remainingPct}% remaining]`
+  const reminder = `\n\n${CONTEXT_REMINDER}\n[Context Status: ${usedPct}% used (${usedTokens}/${limitTokens} tokens), ${remainingPct}% remaining]`
+  if (output.output == null) {
+    output.output = reminder
+  } else if (typeof output.output === "string") {
+    output.output += reminder
+  }
 }
 
 export function handleContextWindowEvent(event: { type: string; properties?: unknown }): void {

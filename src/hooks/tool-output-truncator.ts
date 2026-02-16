@@ -45,7 +45,7 @@ export function handleToolOutputTruncation(
   tool: string,
   output: { output: string },
 ): void {
-  if (typeof output.output !== "string") return
+  if (output.output == null || typeof output.output !== "string") return
 
   // Always strip ANSI escape sequences from all tool outputs
   if (ANSI_REGEX.test(output.output)) {
