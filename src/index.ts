@@ -40,6 +40,8 @@ const recalledMemories = new Map<string, string>()
 const editErrorSystemPrompt: { system: string[] } = { system: [] }
 // Track which sessions have had their first message processed
 const sessionFirstMessage = new Set<string>()
+// Cache subagent detection per session (subagents don't have plugin tools)
+const subAgentSessions = new Map<string, boolean>()
 
 export default async function OpenRecallPlugin(
   inputRef: PluginInput,
@@ -178,6 +180,7 @@ export default async function OpenRecallPlugin(
           sessionContext.delete(properties.id)
           recalledMemories.delete(properties.id)
           sessionFirstMessage.delete(properties.id)
+          subAgentSessions.delete(properties.id)
           clearSessionExtraction(properties.id)
           clearCounter(properties.id)
           clearMistakeTracking(properties.id)
@@ -322,6 +325,30 @@ export default async function OpenRecallPlugin(
 
     // Inject both memory context and SCR system prompt
     "experimental.chat.system.transform": async (input, output) => {
+      // Detect subagent sessions — they don't have plugin tools, so skip memory instructions
+      const sessionId = (input as any).sessionID as string | undefined
+      if (sessionId) {
+        if (!subAgentSessions.has(sessionId)) {
+          try {
+            const result = await inputRef.client.session.get({ path: { id: sessionId } } as any)
+            subAgentSessions.set(sessionId, !!(result as any).data?.parentID)
+          } catch {
+            subAgentSessions.set(sessionId, false)
+          }
+        }
+        if (subAgentSessions.get(sessionId)) {
+          // Still run SCR system prompt (it has its own subagent guard)
+          try {
+            if (scrHooks["experimental.chat.system.transform"]) {
+              await scrHooks["experimental.chat.system.transform"](input, output)
+            }
+          } catch {
+            // Silent fail
+          }
+          return
+        }
+      }
+
       // OpenRecall: inject memory context
       const lines: string[] = [
         "IMPORTANT: You have persistent cross-session memory tools (memory_store, memory_search, memory_list, memory_update, memory_delete, memory_tag, memory_link, memory_refresh, memory_stats, memory_export, memory_import, memory_cleanup, memory_file_check).",
@@ -367,7 +394,6 @@ export default async function OpenRecallPlugin(
       output.system.push(lines.join("\n"))
 
       // Inject auto-recalled memories if available
-      const sessionId = input.sessionID
       if (sessionId) {
         const memories = recalledMemories.get(sessionId)
         if (memories) {
