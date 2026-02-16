@@ -9,6 +9,8 @@ import { maybeRunMaintenance } from "./maintenance"
 import { extractFromToolOutput, clearSessionExtraction } from "./extract"
 import { incrementCounter, clearCounter, scanProjectFiles, extractFileKnowledge } from "./agent"
 import { createScrPlugin } from "./scr"
+import { createTeamTools } from "./teams"
+import { listAgents as listTeamAgents } from "./teams/state"
 import { trackMistake, clearMistakeTracking } from "./mistakes"
 import {
   createPreemptiveCompactionHook,
@@ -317,10 +319,11 @@ export default async function OpenRecallPlugin(
       }
     },
 
-    // Expose both OpenRecall memory tools and SCR tools
+    // Expose OpenRecall memory tools, SCR tools, and team tools
     tool: {
       ...createTools(projectId),
       ...(scrHooks.tool || {}),
+      ...createTeamTools(inputRef.serverUrl),
     },
 
     // Inject both memory context and SCR system prompt
@@ -405,6 +408,24 @@ export default async function OpenRecallPlugin(
       if (editErrorSystemPrompt.system.length > 0) {
         output.system.push(...editErrorSystemPrompt.system)
         editErrorSystemPrompt.system = []
+      }
+
+      // Team status: inject active agents summary
+      try {
+        const teamAgents = listTeamAgents()
+        if (teamAgents.length > 0) {
+          const summary = teamAgents
+            .map(
+              (a) =>
+                `- ${a.name} (${a.status}): ${a.task.slice(0, 100)}${a.task.length > 100 ? "..." : ""} [session: ${a.sessionID}]`,
+            )
+            .join("\n")
+          output.system.push(
+            `<active-team>\nYou have ${teamAgents.length} team agent(s) running:\n${summary}\n\nUse team_status to check progress, team_message to communicate, team_abort to stop an agent, or team_cleanup to stop all agents.\n</active-team>`,
+          )
+        }
+      } catch {
+        // Silent fail
       }
 
       // SCR: inject system prompt
