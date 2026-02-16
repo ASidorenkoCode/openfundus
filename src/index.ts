@@ -145,8 +145,12 @@ export default async function OpenRecallPlugin(
       }
 
       // SCR: cache variant from chat messages
-      if (scrHooks["chat.message"]) {
-        await scrHooks["chat.message"](input, output)
+      try {
+        if (scrHooks["chat.message"]) {
+          await scrHooks["chat.message"](input, output)
+        }
+      } catch {
+        // Silent fail — never break OpenCode's processing
       }
     },
 
@@ -378,8 +382,12 @@ export default async function OpenRecallPlugin(
       }
 
       // SCR: inject system prompt
-      if (scrHooks["experimental.chat.system.transform"]) {
-        await scrHooks["experimental.chat.system.transform"](input, output)
+      try {
+        if (scrHooks["experimental.chat.system.transform"]) {
+          await scrHooks["experimental.chat.system.transform"](input, output)
+        }
+      } catch {
+        // Silent fail — never break OpenCode's processing
       }
     },
 
@@ -393,8 +401,12 @@ export default async function OpenRecallPlugin(
       }
 
       // SCR: run message reduction pipeline
-      if (scrHooks["experimental.chat.messages.transform"]) {
-        await (scrHooks["experimental.chat.messages.transform"] as any)(input, output)
+      try {
+        if (scrHooks["experimental.chat.messages.transform"]) {
+          await (scrHooks["experimental.chat.messages.transform"] as any)(input, output)
+        }
+      } catch {
+        // Silent fail — never break OpenCode's processing
       }
     },
 
@@ -488,7 +500,17 @@ This structured summary is critical for maintaining continuity after compaction.
     },
 
     // SCR: command handler (SCR only)
-    "command.execute.before": scrHooks["command.execute.before"] as any,
+    "command.execute.before": async (input: any, output: any) => {
+      if (scrHooks["command.execute.before"]) {
+        try {
+          await (scrHooks["command.execute.before"] as any)(input, output)
+        } catch (e) {
+          // Let intentional SCR marker errors propagate to OpenCode
+          if (e instanceof Error && e.message.startsWith("__SCR_")) throw e
+          // Swallow unexpected errors — never break OpenCode's processing
+        }
+      }
+    },
   }
 }
 

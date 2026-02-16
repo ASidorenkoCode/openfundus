@@ -12,7 +12,15 @@ export function isDbAvailable(): boolean {
 }
 
 export function getDb(): Database {
-  if (db) return db
+  if (db) {
+    try {
+      db.prepare("SELECT 1").get()
+      return db
+    } catch {
+      // Connection is dead — reset and recreate
+      db = null
+    }
+  }
 
   if (initFailed) {
     throw new Error("OpenRecall: database initialization previously failed")

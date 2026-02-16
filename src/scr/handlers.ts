@@ -109,20 +109,24 @@ export function createChatMessageTransformHandler(
             return
         }
 
-        syncToolCache(state, config, logger, output.messages)
-        buildToolIdList(state, output.messages, logger)
+        try {
+            syncToolCache(state, config, logger, output.messages)
+            buildToolIdList(state, output.messages, logger)
 
-        deduplicate(state, logger, config, output.messages)
-        supersedeWrites(state, logger, config, output.messages)
-        purgeErrors(state, logger, config, output.messages)
+            deduplicate(state, logger, config, output.messages)
+            supersedeWrites(state, logger, config, output.messages)
+            purgeErrors(state, logger, config, output.messages)
 
-        prune(state, logger, config, output.messages)
-        insertPruneToolContext(state, config, logger, output.messages)
+            prune(state, logger, config, output.messages)
+            insertPruneToolContext(state, config, logger, output.messages)
 
-        applyPendingManualTriggerPrompt(state, output.messages, logger)
+            applyPendingManualTriggerPrompt(state, output.messages, logger)
 
-        if (state.sessionId) {
-            await logger.saveContext(state.sessionId, output.messages)
+            if (state.sessionId) {
+                await logger.saveContext(state.sessionId, output.messages)
+            }
+        } catch (e) {
+            logger.error("SCR message transform failed", { error: String(e) })
         }
     }
 }
