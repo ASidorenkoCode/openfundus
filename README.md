@@ -6,7 +6,7 @@ OpenFundus combines three subsystems into a single plugin:
 
 1. **Memory** — Persistent cross-session memory with full-text search, tagging, linking, and auto-recall
 2. **SCR (Selective Context Reduction)** — Token-aware context pruning, deduplication, and compression
-3. **Hooks** — Eight session protection and enhancement hooks that run automatically
+3. **Hooks** — Nine session protection and enhancement hooks that run automatically
 
 ## Installation
 
@@ -184,7 +184,7 @@ When an `Edit` tool call fails (e.g., the `old_string` was not found), injects a
 
 ### 4. Tool Output Truncator
 
-Truncates excessively large tool outputs to prevent context bloat:
+Strips ANSI escape sequences from all tool outputs to save tokens. Truncates excessively large outputs to prevent context bloat:
 - `Grep`, `Glob`, `WebFetch`: ~40,000 characters
 - All other tools: ~200,000 characters
 
@@ -197,6 +197,8 @@ Prepends environment variables to shell commands that invoke `git` to prevent in
 
 Also warns when interactive tools (`less`, `vim`, `nano`, etc.) are detected.
 
+On Windows, sanitizes `>nul` / `2>nul` redirections to `>/dev/null` to prevent Git Bash from creating undeletable `nul` files.
+
 ### 6. Context Window Monitor
 
 At 70%+ context usage, appends a brief status line to tool outputs reminding the model how much context remains. Helps the model make informed decisions about whether to prune.
@@ -207,7 +209,11 @@ Blocks `Write` tool calls that target existing files and throws an error directi
 
 ### 8. Session Recovery
 
-Detects API errors (`tool_result_missing`, `thinking_block_order`, `thinking_disabled_violation`) and automatically retries the failed message. Prevents sessions from dying due to transient API issues.
+Detects API errors (`tool_result_missing`, `thinking_block_order`, `thinking_disabled_violation`, `unavailable_tool`) and automatically recovers the session. Prevents sessions from dying due to transient API issues.
+
+### 9. Edit Tool Argument Coercion
+
+Coerces the `replaceAll` argument from string (`"false"`) to boolean (`false`) before the Edit tool executes. Fixes schema validation errors caused by LLMs outputting string values instead of booleans.
 
 ## Structured Compaction
 
