@@ -10,17 +10,18 @@ OpenFundus combines three subsystems into a single plugin:
 
 ## Installation
 
-```bash
-bun add openfundus
-```
+Add to your OpenCode config:
 
-Add to your OpenCode config (`opencode.json`):
-
-```json
+```jsonc
+// .opencode/opencode.jsonc
 {
-  "plugins": ["openfundus"]
+  "plugin": ["openfundus@latest"]
 }
 ```
+
+Using `@latest` ensures you always get the newest version automatically when OpenCode starts.
+
+Restart OpenCode. The plugin will automatically start managing your sessions.
 
 ## Memory
 
