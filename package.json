@@ -1,0 +1,60 @@
+{
+  "name": "openfundus",
+  "version": "0.1.0",
+  "description": "All-in-one OpenCode plugin: cross-session memory, selective context reduction, and session protection hooks",
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src/**/*.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun test && bun run typecheck"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "memory",
+    "context-management",
+    "selective-context-reduction",
+    "cross-session",
+    "fts5",
+    "sqlite",
+    "ai",
+    "llm",
+    "session-protection",
+    "token-optimization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ASidorenkoCode/openfundus.git"
+  },
+  "homepage": "https://github.com/ASidorenkoCode/openfundus",
+  "bugs": {
+    "url": "https://github.com/ASidorenkoCode/openfundus/issues"
+  },
+  "license": "MIT",
+  "author": "ASidorenkoCode",
+  "dependencies": {
+    "@anthropic-ai/tokenizer": "^0.0.4",
+    "@opencode-ai/plugin": "^1.2.2",
+    "@opencode-ai/sdk": "^1.1.48",
+    "fuzzball": "^2.2.3",
+    "jsonc-parser": "^3.3.1",
+    "ulid": "^3.0.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
